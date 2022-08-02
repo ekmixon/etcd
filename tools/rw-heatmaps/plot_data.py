@@ -41,7 +41,7 @@ def load_data_files(*args):
     try:
         for i in args:
             if i is not None:
-                logger.debug('loading csv file {}'.format(i))
+                logger.debug(f'loading csv file {i}')
                 df_list.append(pd.read_csv(i))
     except FileNotFoundError as e:
         logger.error(str(e))
@@ -186,9 +186,7 @@ def plot_data(title, plot_type, cmap_name_default, *args):
         df0 = args[0]['dataframe']
         df0param = args[0]['param']
         fig = plt.figure(figsize=fig_size)
-        count = 0
-        for val, df in df0.groupby('ratio'):
-            count += 1
+        for count, (val, df) in enumerate(df0.groupby('ratio'), start=1):
             plt.subplot(4, 2, count)
             plt.tripcolor(df['conn_size'], df['value_size'], df[plot_type])
             plt.title('R/W Ratio {:.4f} [{:.2f}, {:.2f}]'.format(val, df[plot_type].min(),
@@ -199,7 +197,7 @@ def plot_data(title, plot_type, cmap_name_default, *args):
             plt.xlabel('Connections Amount')
             plt.colorbar()
             plt.tight_layout()
-        fig.suptitle('{} [{}]\n{}'.format(title, plot_type.upper(), df0param))
+        fig.suptitle(f'{title} [{plot_type.upper()}]\n{df0param}')
     elif len(args) == 2:
         fig_size = (12, 26)
         df0 = args[0]['dataframe']
@@ -207,13 +205,11 @@ def plot_data(title, plot_type, cmap_name_default, *args):
         df1 = args[1]['dataframe']
         df1param = args[1]['param']
         fig = plt.figure(figsize=fig_size)
-        col = 0
         delta_df = df1.copy()
         delta_df[[plot_type]] = ((df1[[plot_type]] - df0[[plot_type]]) /
                                  df0[[plot_type]]) * 100
-        for tmp in [df0, df1, delta_df]:
-            row = 0
-            for val, df in tmp.groupby('ratio'):
+        for col, tmp in enumerate([df0, df1, delta_df]):
+            for row, (val, df) in enumerate(tmp.groupby('ratio')):
                 pos = row * 3 + col + 1
                 plt.subplot(8, 3, pos)
                 norm = None
@@ -238,13 +234,12 @@ def plot_data(title, plot_type, cmap_name_default, *args):
                     elif col == 2:
                         plt.title('Gain\nR/W Ratio {:.4f} [{:.2f}%, {:.2f}%]'.format(val, df[plot_type].min(),
                                                                                      df[plot_type].max()))
+                elif col == 2:
+                    plt.title('R/W Ratio {:.4f} [{:.2f}%, {:.2f}%]'.format(val, df[plot_type].min(),
+                                                                           df[plot_type].max()))
                 else:
-                    if col == 2:
-                        plt.title('R/W Ratio {:.4f} [{:.2f}%, {:.2f}%]'.format(val, df[plot_type].min(),
-                                                                               df[plot_type].max()))
-                    else:
-                        plt.title('R/W Ratio {:.4f} [{:.1f}, {:.1f}]'.format(val, df[plot_type].min(),
-                                                                             df[plot_type].max()))
+                    plt.title('R/W Ratio {:.4f} [{:.1f}, {:.1f}]'.format(val, df[plot_type].min(),
+                                                                         df[plot_type].max()))
                 plt.yscale('log', base=2)
                 plt.ylabel('Value Size')
                 plt.xscale('log', base=2)
@@ -255,16 +250,16 @@ def plot_data(title, plot_type, cmap_name_default, *args):
                 else:
                     plt.colorbar()
                 plt.tight_layout()
-                row += 1
-            col += 1
-        fig.suptitle('{} [{}]\n{}    {}\n{}    {}'.format(
-            title, plot_type.upper(), os.path.basename(params.input_file_a), df0param,
-            os.path.basename(params.input_file_b), df1param))
+        fig.suptitle(
+            f'{title} [{plot_type.upper()}]\n{os.path.basename(params.input_file_a)}    {df0param}\n{os.path.basename(params.input_file_b)}    {df1param}'
+        )
+
     else:
         raise Exception('invalid plot input data')
     fig.subplots_adjust(top=0.93)
-    plt.savefig("{}_{}.{}".format(params.output, plot_type,
-                params.format), format=params.format)
+    plt.savefig(
+        f"{params.output}_{plot_type}.{params.format}", format=params.format
+    )
 
 
 def main():
